@@ -1,6 +1,6 @@
 "use client";
 
-import { ChangeEvent, DragEvent, useEffect, useRef, useState } from "react";
+import { ChangeEvent, DragEvent, useCallback, useEffect, useRef, useState } from "react";
 import { FFmpeg } from "@ffmpeg/ffmpeg";
 import { fetchFile, toBlobURL } from "@ffmpeg/util";
 import JSZip from "jszip";
@@ -72,12 +72,14 @@ export default function HomePage() {
     };
   }, []);
 
-  const resetDownloadUrl = () => {
-    if (downloadUrl) {
-      URL.revokeObjectURL(downloadUrl);
-      setDownloadUrl(null);
-    }
-  };
+  const resetDownloadUrl = useCallback(() => {
+    setDownloadUrl((current) => {
+      if (current) {
+        URL.revokeObjectURL(current);
+      }
+      return null;
+    });
+  }, []);
 
   const onFileChange = (event: ChangeEvent<HTMLInputElement>) => {
     const file = event.target.files?.[0];
@@ -157,8 +159,9 @@ export default function HomePage() {
         const name = `frame_${String(index).padStart(5, "0")}.png`;
 
         try {
-          const data = await ffmpeg.readFile(name);
-          generatedFrames.push({ name, data });
+          const fileData = await ffmpeg.readFile(name);
+          const bytes = typeof fileData === "string" ? new TextEncoder().encode(fileData) : fileData;
+          generatedFrames.push({ name, data: bytes });
           touchedFiles.push(name);
         } catch (error) {
           break;
@@ -281,3 +284,7 @@ export default function HomePage() {
     </main>
   );
 }
+
+
+
+
