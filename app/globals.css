@@ -300,18 +300,15 @@ body {
 }
 
 .pipe-grid {
-  background-image: linear-gradient(
-      90deg,
-      rgba(255, 0, 184, 0.35) 1px,
-      transparent 1px
-    ),
-    linear-gradient(
-      rgba(15, 244, 242, 0.35) 1px,
-      transparent 1px
-    );
-  background-size: 60px 60px;
-  animation: pipes 12s linear infinite;
+  background-image:
+    linear-gradient(30deg, rgba(255, 0, 184, 0.3) 12%, transparent 12.5%, transparent 87%, rgba(255, 0, 184, 0.3) 87.5%, rgba(255, 0, 184, 0.3)),
+    linear-gradient(150deg, rgba(255, 0, 184, 0.3) 12%, transparent 12.5%, transparent 87%, rgba(255, 0, 184, 0.3) 87.5%, rgba(255, 0, 184, 0.3)),
+    linear-gradient(90deg, rgba(15, 244, 242, 0.28) 2%, transparent 2.5%, transparent 97.5%, rgba(15, 244, 242, 0.28) 97.5%, rgba(15, 244, 242, 0.28));
+  background-size: 120px 104px;
+  background-position: 0 0, 0 0, 60px 52px;
+  animation: pipes 16s linear infinite;
   mix-blend-mode: lighten;
+  opacity: 0.85;
 }
 
 .sr-only {
@@ -378,10 +375,10 @@ body {
 
 @keyframes pipes {
   0% {
-    background-position: 0 0, 0 0;
+    background-position: 0 0, 0 0, 60px 52px;
   }
   100% {
-    background-position: 120px 120px, 120px 120px;
+    background-position: 0 104px, 0 104px, 60px 156px;
   }
 }
 
