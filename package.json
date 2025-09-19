@@ -7,7 +7,11 @@
     "build": "next build",
     "start": "next start",
     "lint": "next lint",
-    "postinstall": "node scripts/copy-ffmpeg-core.mjs"
+    "postinstall": "npm run copy:ffmpeg-core",
+    "copy:ffmpeg-core": "node scripts/copy-ffmpeg-core.mjs",
+    "prebuild": "npm run copy:ffmpeg-core",
+    "predev": "npm run copy:ffmpeg-core",
+    "prestart": "npm run copy:ffmpeg-core"
   },
   "dependencies": {
     "@ffmpeg/core": "^0.12.6",
