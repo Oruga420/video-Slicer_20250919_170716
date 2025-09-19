@@ -5,6 +5,7 @@ import { join } from "node:path";
 const projectRoot = process.cwd();
 const sourceDir = join(projectRoot, "node_modules", "@ffmpeg", "core", "dist", "esm");
 const targetDir = join(projectRoot, "public", "ffmpeg");
+const filesToCopy = ["ffmpeg-core.js", "ffmpeg-core.wasm"];
 
 async function main() {
   if (!existsSync(sourceDir)) {
@@ -13,7 +14,13 @@ async function main() {
   }
 
   await mkdir(targetDir, { recursive: true });
-  await cp(sourceDir, targetDir, { recursive: true });
+
+  await Promise.all(
+    filesToCopy.map(async (filename) => {
+      await cp(join(sourceDir, filename), join(targetDir, filename));
+    })
+  );
+
   console.log("[copy-ffmpeg-core] Copied ffmpeg core assets to", targetDir);
 }
 

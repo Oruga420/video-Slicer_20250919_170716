@@ -51,13 +51,12 @@ export default function HomePage() {
 
         for (const source of sources) {
           try {
-            const [coreURL, wasmURL, workerURL] = await Promise.all([
+            const [coreURL, wasmURL] = await Promise.all([
               toBlobURL(`${source.base}/ffmpeg-core.js`, "text/javascript"),
-              toBlobURL(`${source.base}/ffmpeg-core.wasm`, "application/wasm"),
-              toBlobURL(`${source.base}/ffmpeg-core.worker.js`, "text/javascript")
+              toBlobURL(`${source.base}/ffmpeg-core.wasm`, "application/wasm")
             ]);
 
-            await ffmpeg.load({ coreURL, wasmURL, workerURL });
+            await ffmpeg.load({ coreURL, wasmURL });
             selectedVariant = source.variant;
             break;
           } catch (error) {
