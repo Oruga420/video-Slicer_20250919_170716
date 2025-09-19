@@ -13,6 +13,7 @@ type FrameAsset = {
 };
 
 const CORE_BASE_URL = "/ffmpeg";
+const CORE_FALLBACK_BASE_URL = "https://unpkg.com/@ffmpeg/core@0.12.6/dist/esm";
 const MAX_FRAMES = 36000;
 
 export default function HomePage() {
@@ -41,11 +42,36 @@ export default function HomePage() {
           setProgress(Math.round(progress * 100));
         });
 
-        await ffmpeg.load({
-          coreURL: await toBlobURL(`${CORE_BASE_URL}/ffmpeg-core.js`, "text/javascript"),
-          wasmURL: await toBlobURL(`${CORE_BASE_URL}/ffmpeg-core.wasm`, "application/wasm"),
-          workerURL: await toBlobURL(`${CORE_BASE_URL}/ffmpeg-core.worker.js`, "text/javascript")
-        });
+        const sources: Array<{ base: string; variant: "primary" | "fallback"; }> = [
+          { base: CORE_BASE_URL, variant: "primary" },
+          { base: CORE_FALLBACK_BASE_URL, variant: "fallback" }
+        ];
+        let selectedVariant: "primary" | "fallback" | null = null;
+        let lastError: unknown = null;
+
+        for (const source of sources) {
+          try {
+            const [coreURL, wasmURL, workerURL] = await Promise.all([
+              toBlobURL(`${source.base}/ffmpeg-core.js`, "text/javascript"),
+              toBlobURL(`${source.base}/ffmpeg-core.wasm`, "application/wasm"),
+              toBlobURL(`${source.base}/ffmpeg-core.worker.js`, "text/javascript")
+            ]);
+
+            await ffmpeg.load({ coreURL, wasmURL, workerURL });
+            selectedVariant = source.variant;
+            break;
+          } catch (error) {
+            lastError = error;
+            console.warn(`Failed to load ffmpeg core from ${source.base}`, error);
+            if (source.variant === "primary" && isActive) {
+              setMessage("Primary core unavailable. Routing through backup mirror...");
+            }
+          }
+        }
+
+        if (!selectedVariant) {
+          throw lastError ?? new Error("Unable to load ffmpeg core bundle.");
+        }
 
         if (!isActive) {
           ffmpeg.terminate();
@@ -55,7 +81,11 @@ export default function HomePage() {
         ffmpegRef.current = ffmpeg;
         setIsReady(true);
         setStatus("idle");
-        setMessage("Upload your video and let the frames fly.");
+        setMessage(
+          selectedVariant === "fallback"
+            ? "Neon engine booted via backup core. Upload your video and let the frames fly."
+            : "Upload your video and let the frames fly."
+        );
       } catch (error) {
         console.error(error);
         setStatus("error");
