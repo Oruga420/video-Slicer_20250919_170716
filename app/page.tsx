@@ -34,7 +34,7 @@ export default function HomePage() {
       setMessage("Booting the neon engine...");
 
       try {
-        const ffmpeg = new FFmpeg({ log: false });
+        const ffmpeg = new FFmpeg();
 
         ffmpeg.on("progress", ({ progress }) => {
           if (!isActive) return;
