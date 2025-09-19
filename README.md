@@ -1,13 +1,42 @@
-# chatgpt-api-whisper-api-voice-assistant
-chatgpt api and whisper api tutorial - voice conversation with therapist
+# Video Slicer
 
-Video Demo / Tutorial:
+Neon-soaked web app that slices any uploaded video into one PNG frame per second, bundles the frames into a zip, and lets you download the whole stash. Built to deploy on Vercel with a retro 90s interface.
 
-https://www.youtube.com/watch?v=Si0vFx_dJ5Y
+## Features
 
-## Setup
+- Drag-and-drop any video format that browsers support
+- Client-side frame extraction powered by `@ffmpeg/ffmpeg` WebAssembly
+- Automatic zipping with `jszip` and single-click download
+- Animated retro UI with cyan, magenta, Ferrari red, and sunset orange accents
+- Background effects that kick in while processing for a time-lapse vibe
 
-Install `ffmpeg` with:
+## Tech Stack
+
+- [Next.js 14](https://nextjs.org/) with the App Router
+- React 18
+- [`@ffmpeg/ffmpeg`](https://github.com/ffmpegwasm/ffmpeg.wasm) and [`@ffmpeg/util`](https://github.com/ffmpegwasm/ffmpeg.wasm/tree/master/packages/util)
+- [`jszip`](https://stuk.github.io/jszip/)
+
+## Getting Started
+
+```bash
+npm install
+npm run dev
 ```
-brew install ffmpeg
-```
+
+Open `http://localhost:3000` and start slicing.
+
+## Deploying to Vercel
+
+1. Push this project to a Git repo (GitHub, GitLab, Bitbucket).
+2. Create a new Vercel project and import the repo.
+3. Use the default settings for a Next.js app. No environment variables are required.
+4. Trigger a deployment. The ffmpeg core is loaded at runtime from the official `@ffmpeg/core` CDN bundle, so no additional build steps are needed.
+
+> If you prefer to self-host the ffmpeg core bundle, copy the contents of `node_modules/@ffmpeg/core/dist/esm` into `public/ffmpeg` and change `CORE_BASE_URL` in `app/page.tsx` to `/ffmpeg`.
+
+## Notes
+
+- Video processing is entirely client-side. Large uploads will consume browser memory and can take time—consider trimming before upload if you run into limits.
+- The progress indicator mirrors the ffmpeg compilation progress, but zipping happens afterward; the status panel will keep you informed.
+- The UI uses a Google-hosted font (`Press Start 2P`). If you need offline assets, download the font and serve it from `public`.

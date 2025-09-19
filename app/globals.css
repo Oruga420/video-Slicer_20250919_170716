@@ -1,0 +1,380 @@
+@import url("https://fonts.googleapis.com/css2?family=Press+Start+2P&display=swap");
+
+:root {
+  --cyan: #0ff4f2;
+  --magenta: #ff00b8;
+  --ferrari: #ff1801;
+  --sunset: #ff8c42;
+  --space: #05010a;
+  --panel: rgba(15, 9, 34, 0.88);
+  --panel-border: rgba(255, 255, 255, 0.25);
+  --text: #f9f7ff;
+  --muted: rgba(249, 247, 255, 0.7);
+}
+
+*,
+*::before,
+*::after {
+  box-sizing: border-box;
+}
+
+html,
+body {
+  margin: 0;
+  padding: 0;
+}
+
+.retro-body {
+  min-height: 100vh;
+  font-family: "Press Start 2P", system-ui, sans-serif;
+  background: radial-gradient(circle at top, var(--magenta) 0%, #28144f 30%, var(--space) 85%);
+  color: var(--text);
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  position: relative;
+  overflow-x: hidden;
+}
+
+.retro-body::before,
+.retro-body::after {
+  content: "";
+  position: fixed;
+  inset: 0;
+  pointer-events: none;
+}
+
+.retro-body::before {
+  background: repeating-linear-gradient(
+    0deg,
+    rgba(255, 255, 255, 0.05) 0px,
+    rgba(255, 255, 255, 0.05) 1px,
+    transparent 1px,
+    transparent 3px
+  );
+  mix-blend-mode: screen;
+  opacity: 0.25;
+  animation: scan 7s linear infinite;
+}
+
+.retro-body::after {
+  background: radial-gradient(circle, rgba(255, 0, 184, 0.1), transparent 60%);
+  filter: blur(60px);
+  opacity: 0.7;
+}
+
+.app-shell {
+  width: min(960px, 90vw);
+  margin: 64px auto;
+}
+
+.crt-frame {
+  position: relative;
+  padding: 48px;
+  background: var(--panel);
+  border: 3px solid var(--panel-border);
+  border-radius: 24px;
+  box-shadow: 0 0 30px rgba(0, 255, 255, 0.3), 0 0 90px rgba(255, 0, 184, 0.25);
+  overflow: hidden;
+}
+
+.header {
+  text-align: center;
+  margin-bottom: 40px;
+}
+
+.title-glitch {
+  font-size: clamp(28px, 4vw, 38px);
+  text-transform: uppercase;
+  display: inline-flex;
+  gap: 14px;
+  position: relative;
+  letter-spacing: 6px;
+  color: var(--cyan);
+  text-shadow: 3px 0 var(--magenta), -3px 0 var(--sunset), 0 0 18px rgba(15, 212, 255, 0.8);
+  animation: glow 1.5s infinite alternate;
+}
+
+.title-glitch span {
+  display: block;
+}
+
+.tagline {
+  margin-top: 12px;
+  font-size: 12px;
+  color: var(--muted);
+}
+
+.drop-zone {
+  position: relative;
+  border: 3px dashed rgba(255, 255, 255, 0.35);
+  border-radius: 18px;
+  padding: 48px;
+  text-align: center;
+  cursor: pointer;
+  transition: transform 0.3s ease, border-color 0.3s ease, box-shadow 0.3s ease;
+  backdrop-filter: blur(8px);
+}
+
+.drop-zone:hover {
+  border-color: var(--cyan);
+  box-shadow: 0 0 30px rgba(15, 244, 242, 0.3);
+  transform: translateY(-4px);
+}
+
+.drop-zone__art {
+  display: grid;
+  gap: 12px;
+  color: var(--muted);
+}
+
+.drop-zone__icon {
+  font-size: 32px;
+  color: var(--sunset);
+  animation: bob 1.8s ease-in-out infinite;
+}
+
+.file-input {
+  position: absolute;
+  inset: 0;
+  opacity: 0;
+  cursor: pointer;
+}
+
+.retro-button {
+  margin-top: 32px;
+  padding: 18px 32px;
+  background: linear-gradient(135deg, var(--sunset), var(--ferrari));
+  border: 0;
+  border-radius: 14px;
+  color: var(--text);
+  font-family: inherit;
+  font-size: 14px;
+  text-transform: uppercase;
+  letter-spacing: 2px;
+  cursor: pointer;
+  box-shadow: 0 0 20px rgba(255, 140, 66, 0.5);
+  transition: transform 0.2s ease, box-shadow 0.2s ease, filter 0.2s ease;
+}
+
+.retro-button:hover:not(:disabled) {
+  transform: translateY(-3px) scale(1.02);
+  box-shadow: 0 0 30px rgba(255, 0, 184, 0.45);
+  filter: saturate(1.15);
+}
+
+.retro-button:disabled {
+  cursor: not-allowed;
+  opacity: 0.6;
+  box-shadow: none;
+}
+
+.retro-button.secondary {
+  background: linear-gradient(135deg, var(--cyan), var(--magenta));
+  box-shadow: 0 0 24px rgba(15, 244, 242, 0.5);
+}
+
+.status-panel {
+  margin-top: 28px;
+  padding: 24px;
+  border-radius: 16px;
+  background: rgba(9, 5, 22, 0.8);
+  border: 2px solid rgba(255, 0, 184, 0.35);
+  min-height: 120px;
+  display: grid;
+  gap: 18px;
+}
+
+.status-panel p {
+  margin: 0;
+  font-size: 12px;
+  color: var(--muted);
+}
+
+.status-done {
+  border-color: rgba(15, 244, 242, 0.5);
+}
+
+.status-error {
+  border-color: rgba(255, 24, 1, 0.5);
+}
+
+.progress {
+  position: relative;
+  width: 100%;
+  height: 20px;
+  border: 2px solid rgba(255, 255, 255, 0.3);
+  border-radius: 12px;
+  overflow: hidden;
+  background: rgba(255, 255, 255, 0.08);
+  font-size: 10px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding-inline: 10px;
+}
+
+.progress__bar {
+  position: absolute;
+  inset: 0;
+  background: linear-gradient(90deg, var(--cyan), var(--magenta));
+  opacity: 0.65;
+  animation: pulse 1.5s ease-in-out infinite;
+}
+
+.progress span {
+  position: relative;
+  z-index: 1;
+}
+
+.download-panel {
+  display: grid;
+  gap: 12px;
+}
+
+.fx-panel {
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+}
+
+.bg-effects {
+  position: absolute;
+  inset: -120px;
+  opacity: 0.65;
+  transition: opacity 0.4s ease;
+}
+
+.bg-effects--active {
+  opacity: 1;
+}
+
+.scanline,
+.matrix-rain,
+.pipe-grid {
+  position: absolute;
+  inset: 0;
+}
+
+.scanline {
+  background: repeating-linear-gradient(
+    to bottom,
+    rgba(255, 255, 255, 0.08) 0,
+    rgba(255, 255, 255, 0.08) 1px,
+    transparent 1px,
+    transparent 4px
+  );
+  mix-blend-mode: screen;
+  animation: scan 6s linear infinite;
+}
+
+.matrix-rain {
+  background-image: linear-gradient(
+      rgba(4, 255, 195, 0.6) 0%,
+      rgba(4, 255, 195, 0)
+    ),
+    linear-gradient(transparent 70%, rgba(0, 0, 0, 0.7));
+  mask-image: radial-gradient(circle, rgba(255, 255, 255, 0.4), transparent 70%);
+  animation: rain 5s linear infinite;
+  mix-blend-mode: screen;
+}
+
+.pipe-grid {
+  background-image: linear-gradient(
+      90deg,
+      rgba(255, 0, 184, 0.35) 1px,
+      transparent 1px
+    ),
+    linear-gradient(
+      rgba(15, 244, 242, 0.35) 1px,
+      transparent 1px
+    );
+  background-size: 60px 60px;
+  animation: pipes 12s linear infinite;
+  mix-blend-mode: lighten;
+}
+
+.sr-only {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  padding: 0;
+  margin: -1px;
+  overflow: hidden;
+  clip: rect(0, 0, 0, 0);
+  white-space: nowrap;
+  border: 0;
+}
+
+@keyframes bob {
+  0%,
+  100% {
+    transform: translateY(-8px);
+  }
+  50% {
+    transform: translateY(8px);
+  }
+}
+
+@keyframes glow {
+  from {
+    text-shadow: 2px 0 var(--magenta), -2px 0 var(--sunset), 0 0 12px rgba(0, 255, 255, 0.6);
+  }
+  to {
+    text-shadow: 4px 0 var(--cyan), -4px 0 var(--magenta), 0 0 20px rgba(255, 140, 66, 0.9);
+  }
+}
+
+@keyframes scan {
+  0% {
+    transform: translateY(-10%);
+  }
+  50% {
+    transform: translateY(10%);
+  }
+  100% {
+    transform: translateY(-10%);
+  }
+}
+
+@keyframes pulse {
+  0%,
+  100% {
+    opacity: 0.6;
+  }
+  50% {
+    opacity: 0.9;
+  }
+}
+
+@keyframes rain {
+  0% {
+    background-position: 0 -200px;
+  }
+  100% {
+    background-position: 0 200px;
+  }
+}
+
+@keyframes pipes {
+  0% {
+    background-position: 0 0, 0 0;
+  }
+  100% {
+    background-position: 120px 120px, 120px 120px;
+  }
+}
+
+@media (max-width: 720px) {
+  .crt-frame {
+    padding: 36px 24px;
+  }
+
+  .drop-zone {
+    padding: 36px;
+  }
+
+  .retro-button {
+    width: 100%;
+  }
+}
