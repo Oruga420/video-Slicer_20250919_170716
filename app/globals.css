@@ -142,7 +142,6 @@ body {
 }
 
 .retro-button {
-  margin-top: 32px;
   padding: 18px 32px;
   background: linear-gradient(135deg, var(--sunset), var(--ferrari));
   border: 0;
@@ -174,6 +173,27 @@ body {
   box-shadow: 0 0 24px rgba(15, 244, 242, 0.5);
 }
 
+
+.button-row {
+  margin-top: 32px;
+  display: flex;
+  gap: 16px;
+  align-items: center;
+  justify-content: center;
+  flex-wrap: wrap;
+}
+
+.boot-chip {
+  padding: 10px 16px;
+  border-radius: 999px;
+  border: 2px dashed rgba(255, 140, 66, 0.65);
+  background: rgba(255, 140, 66, 0.2);
+  color: var(--sunset);
+  font-size: 10px;
+  letter-spacing: 1px;
+  text-transform: uppercase;
+  animation: pulse 1.6s ease-in-out infinite;
+}
 .status-panel {
   margin-top: 28px;
   padding: 24px;

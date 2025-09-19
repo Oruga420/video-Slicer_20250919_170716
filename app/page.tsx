@@ -237,6 +237,8 @@ export default function HomePage() {
       ? "bg-effects bg-effects--ready"
       : "bg-effects";
   const dropHint = videoFile ? videoFile.name : "Drop your video or click to upload";
+  const isBusy = status === "processing" || status === "zipping";
+  const canSlice = isReady && !!videoFile && !isBusy;
 
   return (
     <main className="app-shell">
@@ -270,19 +272,24 @@ export default function HomePage() {
           </div>
         </label>
 
-        <button
-          className="retro-button"
-          disabled={!isReady || !videoFile || status === "processing" || status === "zipping" || status === "loading"}
-          onClick={processVideo}
-        >
-          {status === "processing"
-            ? "Slicing..."
-            : status === "zipping"
-              ? "Packing..."
-              : !isReady
-                ? "Booting..."
-                : "Slice It!"}
-        </button>
+        <div className="button-row">
+          <button
+            className="retro-button"
+            disabled={!canSlice}
+            onClick={processVideo}
+          >
+            {isBusy
+              ? status === "processing"
+                ? "Slicing..."
+                : "Packing..."
+              : "Slice It!"}
+          </button>
+          {!isReady && (
+            <span className="boot-chip" aria-live="polite">
+              Booting neon engine...
+            </span>
+          )}
+        </div>
 
         <div className={`status-panel status-${status}`}>
           <p>{message}</p>
