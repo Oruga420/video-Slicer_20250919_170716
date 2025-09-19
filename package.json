@@ -6,9 +6,11 @@
     "dev": "next dev",
     "build": "next build",
     "start": "next start",
-    "lint": "next lint"
+    "lint": "next lint",
+    "postinstall": "node scripts/copy-ffmpeg-core.mjs"
   },
   "dependencies": {
+    "@ffmpeg/core": "^0.12.6",
     "@ffmpeg/ffmpeg": "^0.12.5",
     "@ffmpeg/util": "^0.12.1",
     "jszip": "^3.10.1",

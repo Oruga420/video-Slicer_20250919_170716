@@ -31,12 +31,13 @@ Open `http://localhost:3000` and start slicing.
 1. Push this project to a Git repo (GitHub, GitLab, Bitbucket).
 2. Create a new Vercel project and import the repo.
 3. Use the default settings for a Next.js app. No environment variables are required.
-4. Trigger a deployment. The ffmpeg core is loaded at runtime from the official `@ffmpeg/core` CDN bundle, so no additional build steps are needed.
+4. Trigger a deployment. The postinstall script copies the ffmpeg core bundle into `public/ffmpeg`, so the worker loads from your Vercel domain without extra configuration.
 
-> If you prefer to self-host the ffmpeg core bundle, copy the contents of `node_modules/@ffmpeg/core/dist/esm` into `public/ffmpeg` and change `CORE_BASE_URL` in `app/page.tsx` to `/ffmpeg`.
+> To switch core versions or host the files elsewhere, update `scripts/copy-ffmpeg-core.mjs` and the `CORE_BASE_URL` constant in `app/page.tsx`. 
 
 ## Notes
 
-- Video processing is entirely client-side. Large uploads will consume browser memory and can take time—consider trimming before upload if you run into limits.
+- Video processing is entirely client-side. Large uploads will consume browser memory and can take time, so consider trimming before upload if you run into limits.
 - The progress indicator mirrors the ffmpeg compilation progress, but zipping happens afterward; the status panel will keep you informed.
 - The UI uses a Google-hosted font (`Press Start 2P`). If you need offline assets, download the font and serve it from `public`.
+- The install script copies @ffmpeg/core assets into `public/ffmpeg` so the worker loads from the same origin during local dev and on Vercel.

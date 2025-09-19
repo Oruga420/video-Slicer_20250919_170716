@@ -12,7 +12,7 @@ type FrameAsset = {
   data: Uint8Array;
 };
 
-const CORE_BASE_URL = "https://unpkg.com/@ffmpeg/core@0.12.6/dist/esm";
+const CORE_BASE_URL = "/ffmpeg";
 const MAX_FRAMES = 36000;
 
 export default function HomePage() {
@@ -80,7 +80,6 @@ export default function HomePage() {
       return null;
     });
   }, []);
-
   const onFileChange = (event: ChangeEvent<HTMLInputElement>) => {
     const file = event.target.files?.[0];
     if (!file) return;
@@ -199,7 +198,7 @@ export default function HomePage() {
     return () => {
       resetDownloadUrl();
     };
-  }, []);
+  }, [resetDownloadUrl]);
 
   const dropZoneClass = videoFile ? "drop-zone drop-zone--armed" : "drop-zone";
   const fxClass = status === "processing" || status === "zipping"
@@ -284,7 +283,3 @@ export default function HomePage() {
     </main>
   );
 }
-
-
-
-
