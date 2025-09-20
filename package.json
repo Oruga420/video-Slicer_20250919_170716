@@ -6,17 +6,9 @@
     "dev": "next dev",
     "build": "next build",
     "start": "next start",
-    "lint": "next lint",
-    "postinstall": "npm run copy:ffmpeg-core",
-    "copy:ffmpeg-core": "node scripts/copy-ffmpeg-core.mjs",
-    "prebuild": "npm run copy:ffmpeg-core",
-    "predev": "npm run copy:ffmpeg-core",
-    "prestart": "npm run copy:ffmpeg-core"
+    "lint": "next lint"
   },
   "dependencies": {
-    "@ffmpeg/core": "^0.12.6",
-    "@ffmpeg/ffmpeg": "^0.12.5",
-    "@ffmpeg/util": "^0.12.1",
     "jszip": "^3.10.1",
     "next": "14.2.3",
     "react": "18.3.1",

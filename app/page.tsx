@@ -1,105 +1,63 @@
 "use client";
 
-import { ChangeEvent, DragEvent, useCallback, useEffect, useRef, useState } from "react";
-import { FFmpeg } from "@ffmpeg/ffmpeg";
-import { fetchFile, toBlobURL } from "@ffmpeg/util";
+import { ChangeEvent, DragEvent, useCallback, useEffect, useState } from "react";
 import JSZip from "jszip";
 
-type Status = "idle" | "loading" | "processing" | "zipping" | "done" | "error";
+type Status = "idle" | "processing" | "zipping" | "done" | "error";
 
 type FrameAsset = {
   name: string;
   data: Uint8Array;
 };
 
-const CORE_BASE_URL = "/ffmpeg";
-const CORE_FALLBACK_BASE_URL = "https://unpkg.com/@ffmpeg/core@0.12.6/dist/esm";
-const MAX_FRAMES = 36000;
+const FRAME_INTERVAL_SECONDS = 1;
+const MAX_FRAMES = 3600;
+const TARGET_FRAME_HEIGHT = 480;
+
+const clampTime = (time: number, duration: number) => {
+  if (!Number.isFinite(duration) || duration <= 0) {
+    return 0;
+  }
+  const epsilon = Math.min(0.08, duration / 200);
+  const upperBound = Math.max(duration - epsilon, 0);
+  return Math.min(time, upperBound);
+};
+
+const seekTo = (video: HTMLVideoElement, time: number) => {
+  return new Promise<void>((resolve, reject) => {
+    const handleSeeked = () => {
+      cleanup();
+      resolve();
+    };
+
+    const handleError = () => {
+      cleanup();
+      reject(new Error("Unable to seek within the video. Try a different file."));
+    };
+
+    const cleanup = () => {
+      video.removeEventListener("seeked", handleSeeked);
+      video.removeEventListener("error", handleError);
+    };
+
+    video.addEventListener("seeked", handleSeeked, { once: true });
+    video.addEventListener("error", handleError, { once: true });
+    video.currentTime = clampTime(time, video.duration || time);
+  });
+};
+
+const blobToUint8Array = async (blob: Blob) => {
+  const buffer = await blob.arrayBuffer();
+  return new Uint8Array(buffer);
+};
 
 export default function HomePage() {
-  const ffmpegRef = useRef<FFmpeg | null>(null);
-  const [isReady, setIsReady] = useState(false);
   const [status, setStatus] = useState<Status>("idle");
   const [message, setMessage] = useState("Drop a video to begin the slicing ritual.");
   const [videoFile, setVideoFile] = useState<File | null>(null);
   const [progress, setProgress] = useState(0);
   const [downloadUrl, setDownloadUrl] = useState<string | null>(null);
   const [frameCount, setFrameCount] = useState(0);
-
-  // lazily load ffmpeg core when the component mounts
-  useEffect(() => {
-    let isActive = true;
-
-    const loadFFmpeg = async () => {
-      setStatus("loading");
-      setMessage("Booting the neon engine...");
-
-      try {
-        const ffmpeg = new FFmpeg();
-
-        ffmpeg.on("progress", ({ progress }) => {
-          if (!isActive) return;
-          setProgress(Math.round(progress * 100));
-        });
-
-        const sources: Array<{ base: string; variant: "primary" | "fallback"; }> = [
-          { base: CORE_BASE_URL, variant: "primary" },
-          { base: CORE_FALLBACK_BASE_URL, variant: "fallback" }
-        ];
-        let selectedVariant: "primary" | "fallback" | null = null;
-        let lastError: unknown = null;
-
-        for (const source of sources) {
-          try {
-            const [coreURL, wasmURL] = await Promise.all([
-              toBlobURL(`${source.base}/ffmpeg-core.js`, "text/javascript"),
-              toBlobURL(`${source.base}/ffmpeg-core.wasm`, "application/wasm")
-            ]);
-
-            await ffmpeg.load({ coreURL, wasmURL });
-            selectedVariant = source.variant;
-            break;
-          } catch (error) {
-            lastError = error;
-            console.warn(`Failed to load ffmpeg core from ${source.base}`, error);
-            if (source.variant === "primary" && isActive) {
-              setMessage("Primary core unavailable. Routing through backup mirror...");
-            }
-          }
-        }
-
-        if (!selectedVariant) {
-          throw lastError ?? new Error("Unable to load ffmpeg core bundle.");
-        }
-
-        if (!isActive) {
-          ffmpeg.terminate();
-          return;
-        }
-
-        ffmpegRef.current = ffmpeg;
-        setIsReady(true);
-        setStatus("idle");
-        setMessage(
-          selectedVariant === "fallback"
-            ? "Neon engine booted via backup core. Upload your video and let the frames fly."
-            : "Upload your video and let the frames fly."
-        );
-      } catch (error) {
-        console.error(error);
-        setStatus("error");
-        setMessage("Could not boot the retro engine. Refresh and try again.");
-      }
-    };
-
-    loadFFmpeg();
-
-    return () => {
-      isActive = false;
-      ffmpegRef.current?.terminate();
-      ffmpegRef.current = null;
-    };
-  }, []);
 
   const resetDownloadUrl = useCallback(() => {
     setDownloadUrl((current) => {
@@ -109,6 +67,7 @@ export default function HomePage() {
       return null;
     });
   }, []);
+
   const onFileChange = (event: ChangeEvent<HTMLInputElement>) => {
     const file = event.target.files?.[0];
     if (!file) return;
@@ -138,23 +97,8 @@ export default function HomePage() {
     event.preventDefault();
   };
 
-  const sanitizeExtension = (name: string) => {
-    const idx = name.lastIndexOf(".");
-    return idx >= 0 ? name.slice(idx) : ".mp4";
-  };
-
-  const cleanupArtifacts = async (ffmpeg: FFmpeg, names: string[]) => {
-    for (const name of names) {
-      try {
-        await ffmpeg.deleteFile(name);
-      } catch (error) {
-        console.warn("Failed to delete", name, error);
-      }
-    }
-  };
-
   const processVideo = async () => {
-    if (!isReady || !videoFile || !ffmpegRef.current) {
+    if (!videoFile) {
       setMessage("Load a video first. The retro gods await offerings.");
       return;
     }
@@ -164,34 +108,104 @@ export default function HomePage() {
     setProgress(0);
     setMessage("Extracting one frame per second. Sit back and enjoy the glow.");
 
-    const ffmpeg = ffmpegRef.current;
-    const inputName = `input${sanitizeExtension(videoFile.name)}`;
-
-    const generatedFrames: FrameAsset[] = [];
-    const touchedFiles: string[] = [inputName];
+    const videoUrl = URL.createObjectURL(videoFile);
+    const video = document.createElement("video");
+    video.preload = "auto";
+    video.muted = true;
+    video.playsInline = true;
+    video.crossOrigin = "anonymous";
+    video.src = videoUrl;
 
     try {
-      await ffmpeg.writeFile(inputName, await fetchFile(videoFile));
+      await new Promise<void>((resolve, reject) => {
+        const onLoaded = () => {
+          cleanup();
+          resolve();
+        };
+        const onError = () => {
+          cleanup();
+          reject(new Error("Could not read the video metadata."));
+        };
+        const cleanup = () => {
+          video.removeEventListener("loadedmetadata", onLoaded);
+          video.removeEventListener("error", onError);
+        };
+        video.addEventListener("loadedmetadata", onLoaded);
+        video.addEventListener("error", onError);
+      });
 
-      const outputTemplate = `frame_%05d.png`;
-      await ffmpeg.exec([
-        "-i",
-        inputName,
-        "-vf",
-        "fps=1,scale=-1:480:flags=lanczos",
-        outputTemplate
-      ]);
+      if (video.readyState < 2) {
+        await new Promise<void>((resolve) => {
+          const cleanup = () => {
+            video.removeEventListener("loadeddata", handleLoadedData);
+            video.removeEventListener("error", handleError);
+          };
+          const handleLoadedData = () => {
+            cleanup();
+            resolve();
+          };
+          const handleError = () => {
+            cleanup();
+            resolve();
+          };
+          video.addEventListener("loadeddata", handleLoadedData, { once: true });
+          video.addEventListener("error", handleError, { once: true });
+        });
+      }
 
-      // gather generated frames sequentially until one is missing
-      for (let index = 1; index <= MAX_FRAMES; index += 1) {
-        const name = `frame_${String(index).padStart(5, "0")}.png`;
+      if (!Number.isFinite(video.duration) || video.duration <= 0) {
+        throw new Error("This video has no measurable duration.");
+      }
 
-        try {
-          const fileData = await ffmpeg.readFile(name);
-          const bytes = typeof fileData === "string" ? new TextEncoder().encode(fileData) : fileData;
-          generatedFrames.push({ name, data: bytes });
-          touchedFiles.push(name);
-        } catch (error) {
+      const duration = video.duration;
+      const targetTimes: number[] = [];
+      let currentTime = 0;
+
+      while (currentTime < duration && targetTimes.length < MAX_FRAMES) {
+        targetTimes.push(clampTime(currentTime, duration));
+        currentTime += FRAME_INTERVAL_SECONDS;
+      }
+
+      if (targetTimes.length === 0) {
+        targetTimes.push(0);
+      } else if (targetTimes[targetTimes.length - 1] < clampTime(duration, duration) && targetTimes.length < MAX_FRAMES) {
+        targetTimes.push(clampTime(duration, duration));
+      }
+
+      const canvas = document.createElement("canvas");
+      const aspectRatio = video.videoWidth && video.videoHeight ? video.videoWidth / video.videoHeight : 16 / 9;
+      const targetHeight = Math.min(TARGET_FRAME_HEIGHT, video.videoHeight || TARGET_FRAME_HEIGHT);
+      const targetWidth = Math.round(targetHeight * aspectRatio);
+      canvas.width = targetWidth;
+      canvas.height = targetHeight;
+
+      const context = canvas.getContext("2d", { willReadFrequently: true });
+      if (!context) {
+        throw new Error("Canvas drawing is not supported in this browser.");
+      }
+
+      const generatedFrames: FrameAsset[] = [];
+
+      for (let index = 0; index < targetTimes.length; index += 1) {
+        const time = targetTimes[index];
+        await seekTo(video, time);
+        context.drawImage(video, 0, 0, targetWidth, targetHeight);
+
+        const blob = await new Promise<Blob | null>((resolve) => canvas.toBlob(resolve, "image/png"));
+        if (!blob) {
+          continue;
+        }
+
+        const data = await blobToUint8Array(blob);
+        generatedFrames.push({
+          name: `frame_${String(generatedFrames.length + 1).padStart(5, "0")}.png`,
+          data
+        });
+
+        setProgress(Math.min(99, Math.round(((index + 1) / targetTimes.length) * 100)));
+        setMessage(`Capturing frame ${index + 1} of ${targetTimes.length}...`);
+
+        if (generatedFrames.length >= MAX_FRAMES) {
           break;
         }
       }
@@ -202,8 +216,9 @@ export default function HomePage() {
 
       setStatus("zipping");
       setMessage("Packing your frames into a zip of pure nostalgia...");
-      const zip = new JSZip();
+      setProgress(100);
 
+      const zip = new JSZip();
       generatedFrames.forEach(({ name, data }) => {
         zip.file(name, data);
       });
@@ -219,7 +234,9 @@ export default function HomePage() {
       setStatus("error");
       setMessage(error instanceof Error ? error.message : "Something glitched in the matrix.");
     } finally {
-      await cleanupArtifacts(ffmpeg, touchedFiles);
+      URL.revokeObjectURL(videoUrl);
+      video.pause();
+      video.remove();
     }
   };
 
@@ -237,7 +254,7 @@ export default function HomePage() {
       : "bg-effects";
   const dropHint = videoFile ? videoFile.name : "Drop your video or click to upload";
   const isBusy = status === "processing" || status === "zipping";
-  const canSlice = isReady && !!videoFile && !isBusy;
+  const canSlice = !!videoFile && !isBusy;
 
   return (
     <main className="app-shell">
@@ -283,11 +300,6 @@ export default function HomePage() {
                 : "Packing..."
               : "Slice It!"}
           </button>
-          {!isReady && (
-            <span className="boot-chip" aria-live="polite">
-              Booting neon engine...
-            </span>
-          )}
         </div>
 
         <div className={`status-panel status-${status}`}>
